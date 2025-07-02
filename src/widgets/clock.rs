@@ -6,8 +6,8 @@ use ratatui::{
 pub struct ClockWidget;
 
 impl ClockWidget {
-    pub fn render(frame: &mut Frame) {
-        let area = frame.area();
+    pub fn render(frame: &mut Frame, area: Rect) {
+        let area = area;
 
         let hour = Local::now().hour();
         let minute = Local::now().minute();
