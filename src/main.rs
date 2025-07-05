@@ -1,4 +1,4 @@
-use std::{ sync::{Arc, Mutex}, thread::sleep, time::Duration};
+use std::{ sync::{Arc, Mutex}, time::{Duration, Instant}};
 mod widgets;
 use widgets::clock::ClockWidget;
 use widgets::content_menu::ContentMenu;
@@ -26,23 +26,37 @@ fn main() -> Result<()> {
 }
 
 fn run(mut terminal: DefaultTerminal) -> Result<()> {
-    let items = vec![
-        make_netconnect_menu_item()
-    ];
-
+    let items = vec![make_netconnect_menu_item()];
     let mut content_menu = ContentMenu::new(items);
 
-    loop {
-        terminal.draw(|f| {
-            render(f, &content_menu);
-        })?;
+    let tick_rate = Duration::from_secs(1);
+    let mut last_tick = Instant::now();
 
-        if poll_and_dispatch_events(&mut content_menu)? {
-            break Ok(());
+    loop {
+        let timeout = tick_rate
+            .checked_sub(last_tick.elapsed())
+            .unwrap_or(Duration::from_secs(0));
+
+        if event::poll(timeout)? {
+            let quit = dispatch_events(&mut content_menu)?;
+            if quit {
+                break;
+            }
+
+            terminal.draw(|f| {
+                render(f, &content_menu);
+            })?;
         }
 
-        sleep(Duration::from_millis(9));
+        if last_tick.elapsed() >= tick_rate {
+            terminal.draw(|f| {
+                render(f, &content_menu);
+            })?;
+            last_tick = Instant::now();
+        }
     }
+
+    Ok(())
 }
 
 fn render(frame: &mut Frame, menu: &ContentMenu) {
@@ -60,11 +74,7 @@ fn render(frame: &mut Frame, menu: &ContentMenu) {
     menu.render(frame, menu_frame);
 }
 
-fn poll_and_dispatch_events(menu: &mut ContentMenu) -> Result<bool, Error> {
-    if !event::poll(Duration::from_millis(9))? {
-        return Ok(false);
-    }
-
+fn dispatch_events(menu: &mut ContentMenu) -> Result<bool, Error> {
     let event = event::read()?;
 
     menu.handle_events(&event)?;
