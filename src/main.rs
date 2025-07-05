@@ -1,15 +1,14 @@
-use std::{thread::sleep, time::Duration};
+use std::{ sync::{Arc, Mutex}, thread::sleep, time::Duration};
 mod widgets;
 use widgets::clock::ClockWidget;
 use widgets::content_menu::ContentMenu;
-use chrono::{Local, Timelike};
 use color_eyre::{eyre::Error, Result};
-use crossterm::{event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, MouseEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode}};
+use crossterm::{event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode}};
 use ratatui::{
-    layout::{Constraint, Direction, Flex, Layout, Rect}, style::{Color, Stylize}, text::{Line, Span, Text}, widgets::{Block, Borders, List, ListItem, Paragraph}, DefaultTerminal, Frame
+    layout::{Constraint, Direction, Layout}, DefaultTerminal, Frame
 };
 
-use crate::widgets::content_menu::{MenuItem, MenuItemContent};
+use crate::widgets::{content_menu::{StMenuItem}, net_connect::NetConnect};
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
@@ -28,20 +27,10 @@ fn main() -> Result<()> {
 
 fn run(mut terminal: DefaultTerminal) -> Result<()> {
     let items = vec![
-        MenuItem {
-            title: "Button 1".into(),
-            content: MenuItemContent::Paragraph(
-                Paragraph::new("This is content for Button 1.")
-                    .block(Block::default().borders(Borders::ALL).title("Content")),
-            ),
-        },
-        MenuItem {
-            title: "Button 2".into(),
-            content: make_list_content("Item List", &["Apple", "Banana", "Orange"]),
-        },
+        make_netconnect_menu_item()
     ];
 
-    let mut content_menu: ContentMenu = ContentMenu::new(items);
+    let mut content_menu = ContentMenu::new(items);
 
     loop {
         terminal.draw(|f| {
@@ -55,7 +44,6 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         sleep(Duration::from_millis(9));
     }
 }
-
 
 fn render(frame: &mut Frame, menu: &ContentMenu) {
     let clock_frame = Layout::default()
@@ -100,11 +88,23 @@ fn poll_and_dispatch_events(menu: &mut ContentMenu) -> Result<bool, Error> {
     }
 }
 
-fn make_list_content<'a>(title: &'a str, items: &'a [&'a str]) -> MenuItemContent<'a> {
-    let list_items: Vec<ListItem<'a>> = items.iter().map(|&s| ListItem::new(s)).collect();
+fn make_netconnect_menu_item() -> StMenuItem<'static> {
+    let event_nc = Arc::new(Mutex::new(NetConnect::new()));
+    let render_nc = event_nc.clone();
+    let refresh_nc = event_nc.clone();
 
-    let list = List::new(list_items)
-        .block(Block::default().borders(Borders::ALL).title(title));
-
-    MenuItemContent::List(list)
+    StMenuItem {
+        title: "Internet".into(),
+        event: Box::new(move |event: &Event| {
+            event_nc.lock().unwrap().handle_events(&event)?;
+            Ok(())
+        }),
+        starter: Box::new(move || {
+            NetConnect::start_auto_refresh(refresh_nc.clone());
+            Ok(())
+        }),
+        render: Box::new(move |area| {
+            render_nc.lock().unwrap().get_widget(area)
+        }),
+    }
 }
