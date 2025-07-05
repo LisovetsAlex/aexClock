@@ -3,6 +3,8 @@ Terminal UI app with a big clock, ability to connect to internet...
 
 Requires nmcli to run.
 
+![Preview](preview.png)
+
 ## How to start
 ```
 cargo run
