@@ -1,14 +1,22 @@
-use std::{ sync::{Arc, Mutex}, time::{Duration, Instant}};
+use std::{
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 mod widgets;
+use color_eyre::{Result, eyre::Error};
+use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
+use ratatui::{
+    DefaultTerminal, Frame,
+    layout::{Constraint, Direction, Layout},
+};
 use widgets::clock::ClockWidget;
 use widgets::content_menu::ContentMenu;
-use color_eyre::{eyre::Error, Result};
-use crossterm::{event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind}, execute, terminal::{disable_raw_mode, enable_raw_mode}};
-use ratatui::{
-    layout::{Constraint, Direction, Layout}, DefaultTerminal, Frame
-};
 
-use crate::widgets::{content_menu::{StMenuItem}, net_connect::NetConnect};
+use crate::widgets::{content_menu::StMenuItem, net_connect::NetConnect};
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
@@ -87,7 +95,7 @@ fn dispatch_events(menu: &mut ContentMenu) -> Result<bool, Error> {
 
             match key_event.code {
                 KeyCode::Char('q') => return Ok(true),
-                _ => { 
+                _ => {
                     return Ok(false);
                 }
             }
@@ -113,8 +121,6 @@ fn make_netconnect_menu_item() -> StMenuItem<'static> {
             NetConnect::start_auto_refresh(refresh_nc.clone());
             Ok(())
         }),
-        render: Box::new(move |area| {
-            render_nc.lock().unwrap().get_widget(area)
-        }),
+        render: Box::new(move |area| render_nc.lock().unwrap().get_widget(area)),
     }
 }

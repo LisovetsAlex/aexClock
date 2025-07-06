@@ -3,17 +3,16 @@
 //! This module defines a `ContentMenu` UI widget built with `ratatui`, allowing navigation between
 //! multiple menu items.
 
-use std::{rc::Rc};
+use std::rc::Rc;
 
-use color_eyre::{eyre::Error, Result};
-use crossterm::{
-    event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-};
+use color_eyre::{Result, eyre::Error};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
-    layout::{Rect},
-    style::{Color},
-    text::{Line},
-    widgets::{Block, BorderType, Borders, List, Paragraph}, Frame,
+    Frame,
+    layout::Rect,
+    style::Color,
+    text::Line,
+    widgets::{Block, BorderType, Borders, List, Paragraph},
 };
 
 /// Type alias for the render function of a `MenuItem`.
@@ -96,7 +95,9 @@ impl<'a> ContentMenu<'a> {
         let mut button_lines = Vec::new();
         for (i, item) in self.items.iter().enumerate() {
             let style = if i == self.selected_button {
-                ratatui::style::Style::default().fg(Color::Black).bg(Color::White)
+                ratatui::style::Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::White)
             } else {
                 ratatui::style::Style::default()
             };
