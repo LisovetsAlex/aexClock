@@ -15,6 +15,8 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, List, Paragraph},
 };
 
+use crate::config::CONFIG;
+
 /// Type alias for the render function of a `MenuItem`.
 pub type FnRenderMenuItem<'a> = Box<dyn Fn(Rect) -> WiMenuItem<'a> + 'a>;
 
@@ -96,8 +98,8 @@ impl<'a> ContentMenu<'a> {
         for (i, item) in self.items.iter().enumerate() {
             let style = if i == self.selected_button {
                 ratatui::style::Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::White)
+                    .fg(CONFIG().themes.bg_color)
+                    .bg(CONFIG().themes.fg_color)
             } else {
                 ratatui::style::Style::default()
             };
@@ -107,7 +109,7 @@ impl<'a> ContentMenu<'a> {
         let paragraph = Paragraph::new(button_lines).block(
             Block::default()
                 .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
-                .border_type(BorderType::Rounded),
+                .border_type(CONFIG().themes.border_type),
         );
 
         frame.render_widget(paragraph, area[1]);
@@ -118,20 +120,12 @@ impl<'a> ContentMenu<'a> {
             return;
         }
 
-        match key_event.code {
-            KeyCode::Up => {
-                if key_event.modifiers.contains(KeyModifiers::SHIFT) {
-                    return;
-                }
-                self.move_selected_up();
-            }
-            KeyCode::Down => {
-                if key_event.modifiers.contains(KeyModifiers::SHIFT) {
-                    return;
-                }
-                self.move_selected_down();
-            }
-            _ => {}
+        let c = CONFIG();
+
+        if c.key_matches(key_event, &c.keybinds.nav_up) {
+            self.move_selected_up();
+        } else if c.key_matches(key_event, &c.keybinds.nav_down) {
+            self.move_selected_down();
         }
     }
 

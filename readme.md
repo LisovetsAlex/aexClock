@@ -13,13 +13,18 @@ cargo run
 ## How to navigate
 ```
 up, down                    - nav menu
-shift + up, shift + down    - main window
 q                           - quit
+
+Internet
+--------
+shift + up, shift + down    - scroll list
+tab                         - connection info
+enter                       - prompt password to connect to wifi
+esc                         - cancel prompt password
 ```
 
 ## How to compile
+Will create and compile new version of this app
 ```
-cargo build --release
-sudo cp ~/ProgramCode/aexClock/target/release/aexClock /usr/local/bin/aexClock
-aexClock
+./update.sh
 ```

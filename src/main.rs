@@ -1,8 +1,9 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::{Duration, Instant},
-};
+mod config;
 mod widgets;
+use crate::{
+    config::init_config,
+    widgets::{content_menu::StMenuItem, net_connect::NetConnect},
+};
 use color_eyre::{Result, eyre::Error};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
@@ -13,12 +14,16 @@ use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Direction, Layout},
 };
+use std::{
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 use widgets::clock::ClockWidget;
 use widgets::content_menu::ContentMenu;
 
-use crate::widgets::{content_menu::StMenuItem, net_connect::NetConnect};
-
 fn main() -> Result<()> {
+    init_config()?;
+
     enable_raw_mode()?;
     let mut stdout = std::io::stdout();
     execute!(stdout, EnableMouseCapture)?;

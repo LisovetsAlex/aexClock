@@ -13,7 +13,10 @@ use std::{
     time::Duration,
 };
 
-use crate::widgets::content_menu::{EnContentMenuItem, WiMenuItem};
+use crate::{
+    config::CONFIG,
+    widgets::content_menu::{EnContentMenuItem, WiMenuItem},
+};
 
 /// Manages WiFi connectivity UI, including:
 /// - Listing available networks
@@ -119,85 +122,47 @@ impl NetConnect {
             return;
         }
 
+        let c = CONFIG();
+
         if self.show_prompt {
-            match key_event.code {
-                KeyCode::Enter => {
-                    self.connect_to_wifi(&self.prompt_ssid, &self.prompt_pass);
-                    self.show_prompt = false;
-                    self.prompt_ssid.clear();
-                    self.prompt_pass.clear();
-                }
-                KeyCode::Backspace => {
-                    self.prompt_pass.pop();
-                }
-                KeyCode::Char(c) => {
-                    self.prompt_pass.push(c);
-                }
-                _ => {}
+            if c.key_matches(key_event, &c.keybinds.accept) {
+                self.accept_connect();
+            } else if c.key_matches(key_event, &c.keybinds.cancel)
+                || c.key_matches(key_event, &c.keybinds.info)
+            {
+                self.cancel_connect();
+            } else if key_event.code == KeyCode::Backspace {
+                self.prompt_pass.pop();
+            } else if let KeyCode::Char(c) = key_event.code {
+                self.prompt_pass.push(c);
             }
 
             return;
         }
 
         if self.show_info {
-            match key_event.code {
-                KeyCode::Up => {
-                    if !key_event.modifiers.contains(KeyModifiers::SHIFT) {
-                        return;
-                    }
-                    if self.scroll_offset > 0 {
-                        self.scroll_offset -= 1;
-                    }
-                }
-                KeyCode::Down => {
-                    if !key_event.modifiers.contains(KeyModifiers::SHIFT) {
-                        return;
-                    }
-                    let max_offset = self.connection_info.len().saturating_sub(15);
-                    if self.scroll_offset < max_offset {
-                        self.scroll_offset += 1;
-                    }
-                }
-                KeyCode::Tab | KeyCode::Enter | KeyCode::Esc => {
-                    self.show_info = false;
-                    self.scroll_offset = 0;
-                }
-                _ => {}
+            if c.key_matches(key_event, &c.keybinds.content_up) {
+                self.move_scrollbar_up();
+            } else if c.key_matches(key_event, &c.keybinds.content_down) {
+                self.move_scrollbar_down();
+            } else if c.key_matches(key_event, &c.keybinds.accept)
+                || c.key_matches(key_event, &c.keybinds.cancel)
+                || c.key_matches(key_event, &c.keybinds.info)
+            {
+                self.close_info();
             }
 
             return;
         }
 
-        match key_event.code {
-            KeyCode::Up => {
-                if key_event.modifiers.contains(KeyModifiers::SHIFT) {
-                    self.move_selected_up();
-                }
-            }
-            KeyCode::Down => {
-                if key_event.modifiers.contains(KeyModifiers::SHIFT) {
-                    self.move_selected_down();
-                }
-            }
-            KeyCode::Enter => {
-                if self.show_info {
-                    return;
-                }
-                self.show_prompt = true;
-                self.prompt_ssid = self
-                    .wifi_list
-                    .get(self.selected_ssid)
-                    .map(|(ssid, _)| ssid.clone())
-                    .unwrap_or_default();
-                self.prompt_pass.clear();
-            }
-            KeyCode::Tab => {
-                if self.show_prompt {
-                    return;
-                }
-                self.show_info = true;
-            }
-            _ => {}
+        if c.key_matches(key_event, &c.keybinds.content_up) {
+            self.move_selected_up();
+        } else if c.key_matches(key_event, &c.keybinds.content_down) {
+            self.move_selected_down();
+        } else if c.key_matches(key_event, &c.keybinds.accept) {
+            self.open_prompt();
+        } else if c.key_matches(key_event, &c.keybinds.info) {
+            self.open_info();
         }
     }
 
@@ -217,6 +182,51 @@ impl NetConnect {
         }
     }
 
+    fn move_scrollbar_up(&mut self) {
+        if self.scroll_offset > 0 {
+            self.scroll_offset -= 1;
+        }
+    }
+
+    fn move_scrollbar_down(&mut self) {
+        let max_offset = self.connection_info.len().saturating_sub(15);
+        if self.scroll_offset < max_offset {
+            self.scroll_offset += 1;
+        }
+    }
+
+    fn close_info(&mut self) {
+        self.show_info = false;
+        self.scroll_offset = 0;
+    }
+
+    fn open_info(&mut self) {
+        self.show_info = true;
+    }
+
+    fn open_prompt(&mut self) {
+        self.show_prompt = true;
+        self.prompt_ssid = self
+            .wifi_list
+            .get(self.selected_ssid)
+            .map(|(ssid, _)| ssid.clone())
+            .unwrap_or_default();
+        self.prompt_pass.clear();
+    }
+
+    fn accept_connect(&mut self) {
+        self.connect_to_wifi(&self.prompt_ssid, &self.prompt_pass);
+        self.show_prompt = false;
+        self.prompt_ssid.clear();
+        self.prompt_pass.clear();
+    }
+
+    fn cancel_connect(&mut self) {
+        self.show_prompt = false;
+        self.prompt_ssid.clear();
+        self.prompt_pass.clear();
+    }
+
     // ====== Rendering UI Components ======
 
     fn make_wifi_widget_list(&self, max_width: usize) -> List<'static> {
@@ -225,7 +235,7 @@ impl NetConnect {
         let connected_line = format!("Connected to: {}", self.connected_ssid);
         items.push(Line::from(Span::styled(
             format!("{:<width$}", connected_line, width = max_width),
-            Style::default().fg(Color::White),
+            Style::default().fg(CONFIG().themes.fg_color),
         )));
 
         items.push(Line::from(" ".repeat(max_width)));
@@ -238,9 +248,9 @@ impl NetConnect {
                 let line = self.make_wifi_line(ssid, *signal, max_width);
 
                 if i == self.selected_ssid && !self.show_prompt {
-                    line.style(Color::Yellow)
+                    line.style(CONFIG().themes.content_selected_color)
                 } else {
-                    line.style(Color::White)
+                    line.style(CONFIG().themes.fg_color)
                 }
             })
             .collect();
@@ -250,7 +260,7 @@ impl NetConnect {
         List::new(items).block(
             Block::default()
                 .borders(Borders::all())
-                .border_type(BorderType::Rounded)
+                .border_type(CONFIG().themes.border_type)
                 .padding(Padding {
                     left: 1,
                     right: 1,
@@ -269,8 +279,12 @@ impl NetConnect {
                 Block::default()
                     .title("Password")
                     .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .style(Style::default().bg(Color::Black).fg(Color::White)),
+                    .border_type(CONFIG().themes.border_type)
+                    .style(
+                        Style::default()
+                            .bg(CONFIG().themes.bg_color)
+                            .fg(CONFIG().themes.fg_color),
+                    ),
             );
 
         let prompt_width = (max_width - 2) as u16;
@@ -288,7 +302,7 @@ impl NetConnect {
     fn make_empty_prompt(&self) -> (EnContentMenuItem<'static>, Rect) {
         (
             EnContentMenuItem::Paragraph(
-                Paragraph::new("").style(Style::default().bg(Color::Black)),
+                Paragraph::new("").style(Style::default().bg(CONFIG().themes.bg_color)),
             ),
             Rect::default(),
         )
@@ -301,14 +315,14 @@ impl NetConnect {
         let pass_line = format!("{:<width$}", masked_pass, width = max_width);
         lines.push(Line::from(Span::styled(
             pass_line,
-            Style::default().bg(Color::Black),
+            Style::default().bg(CONFIG().themes.bg_color),
         )));
 
         let prompt_height = 3;
         while lines.len() < prompt_height as usize {
             lines.push(Line::from(Span::styled(
                 " ".repeat(38),
-                Style::default().bg(Color::Black),
+                Style::default().bg(CONFIG().themes.bg_color),
             )));
         }
 
@@ -338,11 +352,13 @@ impl NetConnect {
 
                 let style = if padded.contains(" :  ") {
                     Style::default()
-                        .bg(Color::Black)
+                        .bg(CONFIG().themes.bg_color)
                         .fg(Color::DarkGray)
                         .add_modifier(Modifier::BOLD)
                 } else {
-                    Style::default().bg(Color::Black).fg(Color::White)
+                    Style::default()
+                        .bg(CONFIG().themes.bg_color)
+                        .fg(CONFIG().themes.fg_color)
                 };
 
                 Line::from(Span::styled(padded, style))
@@ -380,13 +396,17 @@ impl NetConnect {
         lines.push(Line::from(Span::styled(
             padded_scroll_line,
             Style::default()
-                .bg(Color::Black)
-                .fg(Color::LightYellow)
+                .bg(CONFIG().themes.bg_color)
+                .fg(CONFIG().themes.scroll_color)
                 .add_modifier(Modifier::BOLD),
         )));
 
         let paragraph = Paragraph::new(lines)
-            .style(Style::default().bg(Color::Black).fg(Color::White))
+            .style(
+                Style::default()
+                    .bg(CONFIG().themes.bg_color)
+                    .fg(CONFIG().themes.fg_color),
+            )
             .block(
                 Block::default()
                     .padding(Padding {
@@ -396,7 +416,7 @@ impl NetConnect {
                         bottom: 0,
                     })
                     .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded),
+                    .border_type(CONFIG().themes.border_type),
             );
 
         let w = (max_width + 4) as u16;
