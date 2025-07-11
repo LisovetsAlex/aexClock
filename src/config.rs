@@ -15,26 +15,40 @@ pub struct Config {
 
 #[derive(Debug)]
 pub struct Theme {
+    pub borders_on: bool,
     pub border_color: Color,
     pub border_type: BorderType,
-    pub nav_selected_color: Color,
+    pub nav_selected_fg_color: Color,
+    pub nav_selected_bg_color: Color,
     pub content_selected_color: Color,
     pub bg_color: Color,
     pub fg_color: Color,
     pub scroll_color: Color,
-    pub borders_on: bool,
+    pub bar_side_color: Color,
+    pub bar_filled_color: Color,
+    pub bar_empty_color: Color,
+    pub bar_selected_side_color: Color,
+    pub bar_selected_filled_color: Color,
+    pub bar_selected_empty_color: Color,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct RawThemes {
+    pub borders_on: bool,
     pub border_color: String,
     pub border_style: String,
-    pub nav_selected_color: String,
+    pub nav_selected_fg_color: String,
+    pub nav_selected_bg_color: String,
     pub content_selected_color: String,
     pub bg_color: String,
     pub fg_color: String,
     pub scroll_color: String,
-    pub borders_on: bool,
+    pub bar_side_color: String,
+    pub bar_filled_color: String,
+    pub bar_empty_color: String,
+    pub bar_selected_side_color: String,
+    pub bar_selected_filled_color: String,
+    pub bar_selected_empty_color: String,
 }
 
 impl TryFrom<RawThemes> for Theme {
@@ -44,12 +58,19 @@ impl TryFrom<RawThemes> for Theme {
         Ok(Self {
             border_color: parse_color(&raw.border_color)?,
             border_type: parse_border(&raw.border_style)?,
-            nav_selected_color: parse_color(&raw.nav_selected_color)?,
+            nav_selected_fg_color: parse_color(&raw.nav_selected_fg_color)?,
+            nav_selected_bg_color: parse_color(&raw.nav_selected_bg_color)?,
             content_selected_color: parse_color(&raw.content_selected_color)?,
             bg_color: parse_color(&raw.bg_color)?,
             fg_color: parse_color(&raw.fg_color)?,
             scroll_color: parse_color(&raw.scroll_color)?,
             borders_on: raw.borders_on,
+            bar_side_color: parse_color(&raw.bar_side_color)?,
+            bar_filled_color: parse_color(&raw.bar_filled_color)?,
+            bar_empty_color: parse_color(&raw.bar_empty_color)?,
+            bar_selected_side_color: parse_color(&raw.bar_selected_side_color)?,
+            bar_selected_filled_color: parse_color(&raw.bar_selected_filled_color)?,
+            bar_selected_empty_color: parse_color(&raw.bar_selected_empty_color)?,
         })
     }
 }
@@ -60,6 +81,8 @@ pub struct Keybinds {
     pub nav_down: String,
     pub content_up: String,
     pub content_down: String,
+    pub content_right: String,
+    pub content_left: String,
     pub accept: String,
     pub info: String,
     pub cancel: String,

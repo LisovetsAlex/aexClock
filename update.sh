@@ -38,24 +38,38 @@ if [ ! -f "$CONFIG_FILE" ]; then
     mkdir -p "$CONFIG_DIR"
     cat > "$CONFIG_FILE" <<EOF
 [themes]
-border_color = "white"
+borders_on = true
+border_color = "darkgray"
 border_style = "rounded"
-nav_selected_color = "white"
+
+nav_selected_fg_color = "black"
+nav_selected_bg_color = "cyan"
 content_selected_color = "cyan"
 bg_color = "black"
 fg_color = "white"
 scroll_color = "cyan"
-borders_on = true
+
+bar_side_color = "magenta"
+bar_filled_color = "cyan"
+bar_empty_color = "blue"
+bar_selected_side_color = "darkgray"
+bar_selected_filled_color = "white"
+bar_selected_empty_color = "gray"
 
 [keybinds]
 nav_up = "up"
 nav_down = "down"
+
 content_up = "shift+up"
 content_down = "shift+down"
+content_right = "shift+right"
+content_left = "shift+left"
+
 accept = "enter"
 info = "tab"
 cancel = "esc"
 quit = "q"
+
 EOF
 else
     echo "Config already exists at $CONFIG_FILE"

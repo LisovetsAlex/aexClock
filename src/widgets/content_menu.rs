@@ -10,7 +10,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     Frame,
     layout::Rect,
-    style::Color,
+    style::{Color, Style},
     text::Line,
     widgets::{Block, BorderType, Borders, List, Paragraph},
 };
@@ -98,18 +98,25 @@ impl<'a> ContentMenu<'a> {
         for (i, item) in self.items.iter().enumerate() {
             let style = if i == self.selected_button {
                 ratatui::style::Style::default()
-                    .fg(CONFIG().themes.bg_color)
-                    .bg(CONFIG().themes.fg_color)
+                    .fg(CONFIG().themes.nav_selected_fg_color)
+                    .bg(CONFIG().themes.nav_selected_bg_color)
             } else {
                 ratatui::style::Style::default()
             };
             button_lines.push(Line::styled(item.title.clone(), style));
         }
 
+        let borders = if CONFIG().themes.borders_on {
+            Borders::LEFT | Borders::TOP | Borders::BOTTOM
+        } else {
+            Borders::NONE
+        };
+
         let paragraph = Paragraph::new(button_lines).block(
             Block::default()
-                .borders(Borders::LEFT | Borders::TOP | Borders::BOTTOM)
-                .border_type(CONFIG().themes.border_type),
+                .borders(borders)
+                .border_type(CONFIG().themes.border_type)
+                .border_style(Style::default().fg(CONFIG().themes.border_color)),
         );
 
         frame.render_widget(paragraph, area[1]);

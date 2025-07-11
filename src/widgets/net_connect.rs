@@ -7,6 +7,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, List, Padding, Paragraph},
 };
 use std::{
+    collections::HashSet,
     process::Command,
     sync::{Arc, Mutex},
     thread::sleep,
@@ -257,10 +258,17 @@ impl NetConnect {
 
         items.append(&mut wifi_lines);
 
+        let borders = if CONFIG().themes.borders_on {
+            Borders::ALL
+        } else {
+            Borders::NONE
+        };
+
         List::new(items).block(
             Block::default()
-                .borders(Borders::all())
+                .borders(borders)
                 .border_type(CONFIG().themes.border_type)
+                .border_style(Style::default().fg(CONFIG().themes.border_color))
                 .padding(Padding {
                     left: 1,
                     right: 1,
@@ -273,13 +281,20 @@ impl NetConnect {
     fn make_prompt(&self, max_width: usize, area: Rect) -> (EnContentMenuItem<'static>, Rect) {
         let prompt_lines = self.make_prompt_lines(max_width + 1);
 
+        let borders = if CONFIG().themes.borders_on {
+            Borders::ALL
+        } else {
+            Borders::NONE
+        };
+
         let paragraph = Paragraph::new(prompt_lines)
             .style(Style::default().bg(Color::Black))
             .block(
                 Block::default()
                     .title("Password")
-                    .borders(Borders::ALL)
+                    .borders(borders)
                     .border_type(CONFIG().themes.border_type)
+                    .border_style(Style::default().fg(CONFIG().themes.border_color))
                     .style(
                         Style::default()
                             .bg(CONFIG().themes.bg_color)
@@ -401,6 +416,12 @@ impl NetConnect {
                 .add_modifier(Modifier::BOLD),
         )));
 
+        let borders = if CONFIG().themes.borders_on {
+            Borders::ALL
+        } else {
+            Borders::NONE
+        };
+
         let paragraph = Paragraph::new(lines)
             .style(
                 Style::default()
@@ -415,8 +436,9 @@ impl NetConnect {
                         top: 0,
                         bottom: 0,
                     })
-                    .borders(Borders::ALL)
-                    .border_type(CONFIG().themes.border_type),
+                    .borders(borders)
+                    .border_type(CONFIG().themes.border_type)
+                    .border_style(Style::default().fg(CONFIG().themes.border_color)),
             );
 
         let w = (max_width + 4) as u16;
@@ -523,7 +545,12 @@ impl NetConnect {
             .collect();
 
         networks.sort_by(|a, b| b.1.cmp(&a.1));
-        networks.into_iter().take(10).collect()
+        let mut seen_signals = HashSet::new();
+        networks
+            .into_iter()
+            .filter(|(_, signal)| seen_signals.insert(*signal))
+            .take(10)
+            .collect()
     }
 
     fn get_connected_ssid(&self) -> String {

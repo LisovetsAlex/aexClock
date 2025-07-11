@@ -1,8 +1,8 @@
 mod config;
 mod widgets;
 use crate::{
-    config::init_config,
-    widgets::{content_menu::StMenuItem, net_connect::NetConnect},
+    config::{CONFIG, init_config},
+    widgets::{audio_mixer::AudioMixer, content_menu::StMenuItem, net_connect::NetConnect},
 };
 use color_eyre::{Result, eyre::Error};
 use crossterm::{
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
 }
 
 fn run(mut terminal: DefaultTerminal) -> Result<()> {
-    let items = vec![make_netconnect_menu_item()];
+    let items = vec![make_netconnect_menu_item(), make_audiomixer_menu_item()];
     let mut content_menu = ContentMenu::new(items);
 
     let tick_rate = Duration::from_secs(1);
@@ -80,7 +80,7 @@ fn render(frame: &mut Frame, menu: &ContentMenu) {
 
     let menu_frame = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)])
+        .constraints([Constraint::Percentage(75), Constraint::Percentage(25)])
         .split(clock_frame[1]);
 
     ClockWidget::render(frame, clock_frame[0]);
@@ -98,11 +98,10 @@ fn dispatch_events(menu: &mut ContentMenu) -> Result<bool, Error> {
                 return Ok(false);
             }
 
-            match key_event.code {
-                KeyCode::Char('q') => return Ok(true),
-                _ => {
-                    return Ok(false);
-                }
+            if CONFIG().key_matches(&key_event, &CONFIG().keybinds.quit) {
+                return Ok(true);
+            } else {
+                return Ok(false);
             }
         }
         _ => {
@@ -127,5 +126,24 @@ fn make_netconnect_menu_item() -> StMenuItem<'static> {
             Ok(())
         }),
         render: Box::new(move |area| render_nc.lock().unwrap().get_widget(area)),
+    }
+}
+
+fn make_audiomixer_menu_item() -> StMenuItem<'static> {
+    let event_am = Arc::new(Mutex::new(AudioMixer::new()));
+    let render_am = event_am.clone();
+    let refresh_am = event_am.clone();
+
+    StMenuItem {
+        title: "Audio".into(),
+        event: Box::new(move |event: &Event| {
+            event_am.lock().unwrap().handle_events(&event)?;
+            Ok(())
+        }),
+        starter: Box::new(move || {
+            AudioMixer::start_auto_refresh(refresh_am.clone());
+            Ok(())
+        }),
+        render: Box::new(move |area| render_am.lock().unwrap().get_widget(area)),
     }
 }

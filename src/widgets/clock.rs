@@ -1,6 +1,9 @@
 use chrono::{Local, Timelike};
 use ratatui::{
-    layout::Rect, text::{Line, Span, Text}, widgets::{Block, Borders, Paragraph}, Frame
+    Frame,
+    layout::Rect,
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Paragraph},
 };
 
 pub struct ClockWidget;
@@ -12,27 +15,20 @@ impl ClockWidget {
         let hour = Local::now().hour();
         let minute = Local::now().minute();
 
-        let hour_text = 
-            Self::get_number_text(&[
-                hour / 10, 
-                hour % 10, 
-                10, 
-                minute / 10, 
-                minute % 10]
-            );
+        let hour_text =
+            Self::get_number_text(&[hour / 10, hour % 10, 10, minute / 10, minute % 10]);
 
         let width = (hour_text
             .lines
             .iter()
             .map(|line| line.width())
             .max()
-            .unwrap_or(0) - 1) as u16;
+            .unwrap_or(0)
+            - 1) as u16;
 
         let height = 6 as u16;
 
-        let block = 
-            Block::default()
-                .borders(Borders::BOTTOM);
+        let block = Block::default();
 
         let content_area = Rect {
             x: area.x + (area.width.saturating_sub(width)) / 2,
@@ -65,83 +61,89 @@ impl ClockWidget {
     }
 }
 
-
 const ASCII_DIGITS: [[&str; 5]; 11] = [
-    [ // 0
+    [
+        // 0
         "██████",
         "██  ██",
         "██  ██",
         "██  ██",
         "██████",
     ],
-    [ // 1
+    [
+        // 1
         "  ██  ",
         "████  ",
         "  ██  ",
         "  ██  ",
         "██████",
     ],
-    [ // 2
+    [
+        // 2
         "██████",
         "    ██",
         "██████",
         "██    ",
         "██████",
     ],
-    [ // 3
+    [
+        // 3
         "██████",
         "    ██",
         "██████",
         "    ██",
         "██████",
     ],
-    [ // 4
+    [
+        // 4
         "██  ██",
         "██  ██",
         "██████",
         "    ██",
         "    ██",
     ],
-    [ // 5
+    [
+        // 5
         "██████",
         "██    ",
         "██████",
         "    ██",
         "██████",
     ],
-    [ // 6
+    [
+        // 6
         "██████",
         "██    ",
         "██████",
         "██  ██",
         "██████",
     ],
-    [ // 7
+    [
+        // 7
         "██████",
         "    ██",
         "   ██ ",
         "  ██  ",
         " ██   ",
     ],
-    [ // 8
+    [
+        // 8
         "██████",
         "██  ██",
         "██████",
         "██  ██",
         "██████",
     ],
-    [ // 9
+    [
+        // 9
         "██████",
         "██  ██",
         "██████",
         "    ██",
         "██████",
     ],
-    [ // :
-        "    ",
-        " ██ ",
-        "    ",
-        " ██ ",
-        "    ",
-    ]
+    [
+        // :
+        "    ", " ██ ", "    ", " ██ ", "    ",
+    ],
 ];
